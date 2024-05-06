@@ -24,7 +24,7 @@
   margin-bottom: 10px;
 }
 
-.fruit-list {
+.list {
   display: flex;
   width: 300px;
   flex-direction: column;
@@ -34,28 +34,21 @@
   box-shadow: rgb(155, 155, 155) 0px 0px 10px 0px;
 }
 
-.vegetable-list{
-  display: flex;
-  width: 300px;
-  flex-direction: column;
-  border-radius: 5px;
-  box-shadow: rgb(155, 155, 155) 0px 0px 10px 0px;
-  z-index: 0;
-}
-
 .item {
   padding: 5px;
   margin-bottom: 5px;
   box-sizing: border-box;
   border: 1px solid #000000;
   z-index: 1;
+  cursor: pointer;
+  user-select: none;
 
   &:last-child {
     margin-bottom: 0;
   }
 }
 
-.sub-list-itme {
+.sub-list-item {
   margin: 0 15px;
   margin-bottom: 5px;
 

@@ -1,7 +1,9 @@
 import './App.css';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import {SubList} from './components/sublist'
 
-const list = [
+
+const LIST = [
   {
     type: 'Fruit',
     name: 'Apple',
@@ -48,132 +50,80 @@ const list = [
   },
   ]
 
+const DELAY_TIMEOUT_MS = 5000
 
+//* set goup list by type
+const INIT_LIST_GROUPS = LIST.reduce((acc, current) => {
+  if (!acc[current.type]) {
+    acc[current.type] = []
+  }
+  return acc
+},{})
 
 const  App = () => {
-  const [mainList, setMainList] = useState(list)
-  const [fruitList, setFruitList] = useState([])
-  const [vegetableList, setVegetableList] = useState([])
-  const [tempList, setTempList] = useState([])
-  const mainListOnclick = (selectItem) => {
-    setTempList(prev => [...prev ,selectItem])
-    setMainList(mainList.filter(item => item.name !== selectItem.name))
+  const [mainList, setMainList] = useState(LIST)
+  const [typeGroup, setTypeGroup] = useState(INIT_LIST_GROUPS)
+  const timeoutDelay = useRef(new Map())
 
-    if (selectItem.type === 'Fruit') {
-      fruitList.push(selectItem)
-    } else if (selectItem.type === 'Vegetable') {
-      vegetableList.push(selectItem)
-    }
+  const mainListOnclick = (selectItemIndex) => {
+    const selectItem = mainList[selectItemIndex]
+    //* Remove Item from main list
+    setMainList(filterOut(mainList, selectItem))
+
+    //* Add item to sub list
+    setTypeGroup((prev) => {
+      return {
+        ...prev,
+        [selectItem.type]: [...prev[selectItem.type], selectItem]
+      }
+    })
+    
+    const time = setTimeout(()=> {
+      deleteItem(selectItem)
+    },DELAY_TIMEOUT_MS)
+
+    timeoutDelay.current.set(selectItem.name, time)
   }
-
-  const wait = (time) => new Promise((resolve, reject) => setTimeout(resolve, time))
 
   const filterOut = (list, selectForPop) => {
     return list.filter(item => item.name !== selectForPop.name)
   }
 
-
-
-  const sublistOnclick = async(selectItem, event) => {
-    event.stopPropagation()
-
-    // clear temp for click right column
-    setTempList(filterOut(tempList, selectItem))
-
-    if(selectItem.type === 'Fruit') {
-      const newFriutList = filterOut(fruitList, selectItem)
-
-      if (fruitList.length === 1) {
-        //wait 5 sec
-        wait(5000)
-        setFruitList(newFriutList)
-        // set mainlist 
-        setMainList(prev => [...prev, selectItem])
-          
-        
-      } else {
-        setFruitList(newFriutList)
-        // set mainlist 
+  const deleteItem = (selectItem) => {
+    //* add item to main list
+    setMainList(prev => [...prev, selectItem])
+    setTypeGroup((prev) => {
+      const newItems = prev[selectItem.type].filter(item => item.name !== selectItem.name)
+      return {
+        ...prev,
+        [selectItem.type]: newItems
       }
-      
+    })
+  }
 
-    } else if (selectItem.type === 'Vegetable') {
-
-        const newVegetable = filterOut(vegetableList, selectItem)
-    
-        if (vegetableList.length === 1) {
-          // wait 5 sec
-          await wait(5000)
-          setVegetableList(newVegetable)
-
-        // set mainlist 
-        setMainList(prev => [...prev, selectItem])
-        
-      } else {
-        setVegetableList(newVegetable)
-        // set mainlist 
-        setMainList(prev => [...prev, selectItem])
-      }
+  const handleDeleteItem = (item) => {
+    //* Clear timeout
+    const timeOut = timeoutDelay.current.get(item.name)
+    if (timeOut) {
+      clearTimeout(timeOut)
+      timeoutDelay.current.delete(item.name)
     }
-
-
- 
+    //* Call deleteItem function
+    deleteItem(item)
+  }
   
-  }
-
-
-  const rightColumnOnClick = (event) => {
-
-    if (tempList.length === 0 ) return
-    
-    if(tempList[0].type === 'Fruit') {
-      const newFriutList = filterOut(fruitList, tempList[0])
-      setFruitList(newFriutList)
-
-    } else {
-      // if type = Vegetables
-      console.log('tempList[0] Vegetable', tempList[0] )
-
-      const newVegetable = filterOut(vegetableList, tempList[0])
-      setVegetableList(newVegetable)
-    }
-    const newTemplist = filterOut(tempList, tempList[0])
-    setTempList(newTemplist)
-    mainList.push(tempList[0])
-  }
   return (
     <div className="App">
       <div className='main-list'>
-        {mainList.map(item => 
-        <div key={item.name} className='item' onClick={(e) =>  mainListOnclick(item, e)}>
+        {mainList.map((item, index) => 
+        <div key={item.name} className='item' onClick={(e) =>  mainListOnclick(index)}>
           {item.name}
         </div>
         )}
       </div>
-      <div className='fruit-list'>
-          <div className='title'>
-            Fruit
-          </div>
-          <div className='list'>
-            {fruitList.map(item =>  
-                <div key={item.name} className='item sub-list-itme' onClick={(e) => tempList.find(tempItem =>{ console.log(tempItem.name === item.name) 
-                  return tempItem.name === item.name}  ) && sublistOnclick(item, e)}>
-                  {item.name}
-                </div>)}
-          </div>
-      </div>
-      <div className='vegetable-list' onClick={rightColumnOnClick}>
-           <div className='title' >
-            Vegetable
-          </div>
-          <div className='list'>
-              {vegetableList.map(item => 
-                <div key={item.name} className='item sub-list-itme' onClick={(e) => tempList.find(tempItem =>{ console.log(tempItem.name === item.name) 
-                  return tempItem.name === item.name}  ) && sublistOnclick(item, e)}>
-                    {item.name}
-                </div>)}
-          </div>
-      </div>
+      {Object.keys(INIT_LIST_GROUPS).map((type) => {
+        return <SubList title={type} items={typeGroup[type]} handleDeleteItem={handleDeleteItem} />
+      })}
     </div>
   );
 

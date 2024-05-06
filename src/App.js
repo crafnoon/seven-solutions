@@ -68,8 +68,10 @@ const  App = () => {
   const mainListOnclick = (selectItemIndex) => {
     const selectItem = mainList[selectItemIndex]
     //* Remove Item from main list
-    setMainList(filterOut(mainList, selectItem))
-
+    setMainList((prev) => {
+      const newItems = prev.filter((_, i) => i !== selectItemIndex)
+      return newItems
+    })
     //* Add item to sub list
     setTypeGroup((prev) => {
       return {
@@ -83,10 +85,6 @@ const  App = () => {
     },DELAY_TIMEOUT_MS)
 
     timeoutDelay.current.set(selectItem.name, time)
-  }
-
-  const filterOut = (list, selectForPop) => {
-    return list.filter(item => item.name !== selectForPop.name)
   }
 
   const deleteItem = (selectItem) => {
